@@ -10,12 +10,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos (public, views y la raíz para el logo.png)
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// Servir archivos estáticos (views y la raíz para el logo.png)
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.static(path.join(__dirname))); 
 
-// Configuración de la conexión a MySQL
+// Configuración de la conexión a MySQL (HostGator)
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -23,16 +22,9 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
-// Configuración de Multer para guardar las fotos en public/uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'public/uploads'));
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Configuración de Multer en memoria RAM para convertir la imagen a Base64
+// Esto evita que las fotos se borren cuando Render reinicie su servidor local
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // ==================== RUTAS PÚBLICAS Y DE CATÁLOGO ====================
@@ -95,7 +87,13 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', upload.single('image'), async (req, res) => {
     try {
         const { title, price, stock, brand_id, category_id } = req.body;
-        const imagePath = req.file ? `/uploads/${req.file.filename}` : '';
+        
+        let imagePath = '';
+        if (req.file) {
+            // Convertir la imagen a Base64 para guardarla permanentemente en MySQL (HostGator)
+            const b64 = Buffer.from(req.file.buffer).toString('base64');
+            imagePath = `data:${req.file.mimetype};base64,${b64}`;
+        }
 
         const query = `
             INSERT INTO products (title, price, stock, image_path, brand_id, category_id, status) 
@@ -149,7 +147,8 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
         const { title, price, stock, brand_id, category_id } = req.body;
 
         if (req.file) {
-            const newImagePath = `/uploads/${req.file.filename}`;
+            const b64 = Buffer.from(req.file.buffer).toString('base64');
+            const newImagePath = `data:${req.file.mimetype};base64,${b64}`;
             const query = `
                 UPDATE products 
                 SET title = ?, price = ?, stock = ?, brand_id = ?, category_id = ?, image_path = ? 
