@@ -79,6 +79,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">🖼️ Añadir a la Galería Detallada (Opcional, máx. 5)</label>
                             <input type="file" class="form-control" id="edit_additional_images" name="additional_images" multiple accept="image/*">
+                            <div class="form-text small text-muted">Las nuevas imágenes se sumarán a la galería existente de este artículo.</div>
                         </div>
 
                         <div class="d-grid">
@@ -93,10 +94,12 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('productsContainer');
-            const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            const editModalEl = document.getElementById('editModal');
+            const editModal = new bootstrap.Modal(editModalEl);
             const editForm = document.getElementById('editForm');
             const editBrandSelect = document.getElementById('edit_brand_id');
             const editCategorySelect = document.getElementById('edit_category_id');
+            const btnUpdate = document.getElementById('btnUpdate');
 
             let brandsList = [];
             let categoriesList = [];
@@ -160,6 +163,10 @@
                 document.getElementById('edit_title').value = product.title;
                 document.getElementById('edit_price').value = product.price;
                 document.getElementById('edit_stock').value = product.stock;
+                
+                // Limpiar campos de archivo por si quedaron seleccionados previamente
+                document.getElementById('edit_image').value = '';
+                document.getElementById('edit_additional_images').value = '';
 
                 editBrandSelect.innerHTML = '';
                 brandsList.forEach(b => {
@@ -185,25 +192,30 @@
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('edit_id').value;
-                const formData = new FormData(editForm);
-                const btnUpdate = document.getElementById('btnUpdate');
                 
                 btnUpdate.disabled = true;
-                btnUpdate.textContent = 'Actualizando...';
+                btnUpdate.textContent = 'Actualizando en la nube...';
 
                 try {
-                    const res = await fetch(`/api/products/${id}`, { method: 'PUT', body: formData });
+                    const formData = new FormData(editForm);
+
+                    const res = await fetch(`/api/products/${id}`, { 
+                        method: 'PUT', 
+                        body: formData 
+                    });
+                    
                     const result = await res.json();
 
                     if (result.success) {
                         editModal.hide();
                         loadInventory();
+                        alert('¡Artículo actualizado correctamente!');
                     } else {
-                        alert('Error al actualizar');
+                        alert('Error al actualizar: ' + (result.message || 'Desconocido'));
                     }
                 } catch (err) {
-                    console.error('Error:', err);
-                    alert('Error de conexión al actualizar.');
+                    console.error('Error de red al editar:', err);
+                    alert('Error de conexión con el servidor al intentar actualizar.');
                 } finally {
                     btnUpdate.disabled = false;
                     btnUpdate.textContent = 'Guardar Cambios';
