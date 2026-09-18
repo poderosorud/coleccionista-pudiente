@@ -3,181 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración - El Coleccionista pudiente</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>Gestión de Inventario - El Coleccionista pudiente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #0b132b;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .card {
-            background-color: #1c2541;
-            border: 1px solid #3a506b;
-        }
-        .form-control, .form-select {
-            background-color: #0b132b;
-            color: #ffffff;
-            border: 1px solid #3a506b;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: #0b132b;
-            color: #ffffff;
-            border-color: #6fffe9;
-            box-shadow: 0 0 0 0.25rem rgba(111, 255, 233, 0.25);
-        }
-        .btn-custom {
-            background-color: #00b4d8;
-            color: #ffffff;
-            font-weight: bold;
-        }
-        .btn-custom:hover {
-            background-color: #0096c7;
-            color: #ffffff;
-        }
+        body { background-color: #0b132b; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { background-color: #1c2541; border: 1px solid #3a506b; }
+        .table { color: #fff; }
+        .table-dark { background-color: #1c2541; }
+        .btn-custom { background-color: #00b4d8; color: #fff; font-weight: bold; }
+        .btn-custom:hover { background-color: #0096c7; color: #fff; }
     </style>
 </head>
 <body>
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-info">⚙️ Gestión de Inventario</h2>
+            <div>
+                <a href="/capture.html" class="btn btn-success me-2">📥 Ir a Captura Rápida</a>
+                <a href="/" class="btn btn-outline-light">🌐 Ver Catálogo</a>
+            </div>
+        </div>
 
-    <div class="container my-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow-lg p-4 rounded-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="text-info m-0">🏎️ Registrar Nuevo Auto a Escala</h2>
-                        <a href="/" class="btn btn-outline-light btn-sm">Ver Catálogo 🌐</a>
-                    </div>
-
-                    <form id="productForm" enctype="multipart/form-data">
-                        <!-- Título / Modelo -->
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Título / Modelo del Auto</label>
-                            <input type="text" class="form-control" id="title" name="title" required placeholder="Ej. Nissan Skyline GT-R R34 RLC">
-                        </div>
-
-                        <div class="row">
-                            <!-- Precio -->
-                            <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label">Precio ($ MXN)</label>
-                                <input type="number" step="0.01" class="form-control" id="price" name="price" required placeholder="0.00">
-                            </div>
-                            <!-- Stock -->
-                            <div class="col-md-6 mb-3">
-                                <label for="stock" class="form-label">Stock / Cantidad</label>
-                                <input type="number" class="form-control" id="stock" name="stock" value="1" min="1" required>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Marca -->
-                            <div class="col-md-6 mb-3">
-                                <label for="brand_id" class="form-label">Marca</label>
-                                <select class="form-select" id="brand_id" name="brand_id" required>
-                                    <option value="">Selecciona una marca...</option>
-                                </select>
-                            </div>
-                            <!-- Categoría -->
-                            <div class="col-md-6 mb-3">
-                                <label for="category_id" class="form-label">Categoría</label>
-                                <select class="form-select" id="category_id" name="category_id" required>
-                                    <option value="">Selecciona una categoría...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Imagen Principal -->
-                        <div class="mb-3">
-                            <label for="image" class="form-label">📸 Fotografía Principal</label>
-                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
-                        </div>
-
-                        <!-- Imágenes Detalladas Opcionales (Galería) -->
-                        <div class="mb-4">
-                            <label for="additional_images" class="form-label">🖼️ Imágenes Detalladas Opcionales (Galería, máx. 5)</label>
-                            <input type="file" class="form-control" id="additional_images" name="additional_images" multiple accept="image/*">
-                            <div class="form-text text-muted">Mantén presionada la tecla Ctrl o Shift para seleccionar varias fotos a la vez (motor, interior, detalles, etc.).</div>
-                        </div>
-
-                        <!-- Botón de Envío -->
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-custom btn-lg" id="btnSubmit">Guardar Artículo Permanente</button>
-                        </div>
-                    </form>
-                </div>
+        <div class="card shadow p-4 rounded-4">
+            <h4 class="mb-3 text-warning">Listado de Autos Registrados</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Imagen</th>
+                            <th>Modelo</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable">
+                        <tr><td colspan="5" class="text-center">Cargando inventario...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Script de lógica del panel -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const brandSelect = document.getElementById('brand_id');
-            const categorySelect = document.getElementById('category_id');
-            const productForm = document.getElementById('productForm');
-            const btnSubmit = document.getElementById('btnSubmit');
+            const tableBody = document.getElementById('inventoryTable');
 
-            // 1. Cargar Marcas y Categorías al abrir la página
-            try {
-                const [brandsRes, categoriesRes] = await Promise.all([
-                    fetch('/api/brands'),
-                    fetch('/api/categories')
-                ]);
+            async function loadInventory() {
+                try {
+                    const res = await fetch('/api/products');
+                    const products = await res.json();
+                    
+                    if (products.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No hay autos registrados.</td></tr>';
+                        return;
+                    }
 
-                const brands = await brandsRes.json();
-                const categories = await categoriesRes.json();
-
-                brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand.id;
-                    option.textContent = brand.name;
-                    brandSelect.appendChild(option);
-                });
-
-                categories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category.id;
-                    option.textContent = category.name;
-                    categorySelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error al cargar marcas o categorías:', error);
+                    tableBody.innerHTML = '';
+                    products.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><img src="${p.image_path || 'https://via.placeholder.com/60'}" width="50" height="50" style="object-fit:cover; border-radius:5px;"></td>
+                            <td><strong>${p.title}</strong><br><small class="text-muted">${p.brand_name || ''} - ${p.category_name || ''}</small></td>
+                            <td>$${Number(p.price).toFixed(2)}</td>
+                            <td><span class="badge bg-info text-dark">${p.stock}</span></td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️ Eliminar</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                } catch (err) {
+                    console.error('Error al cargar inventario:', err);
+                }
             }
 
-            // 2. Enviar formulario con FormData (Soporta foto principal + galería múltiple)
-            productForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                btnSubmit.disabled = true;
-                btnSubmit.textContent = 'Guardando en la nube...';
-
-                const formData = new FormData(productForm);
-
-                try {
-                    const response = await fetch('/api/products', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        alert('¡Vehículo y galería guardados exitosamente de forma permanente!');
-                        productForm.reset();
+            window.deleteProduct = async (id) => {
+                if (confirm('¿Estás seguro de eliminar este vehículo?')) {
+                    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.success) {
+                        loadInventory();
                     } else {
-                        alert('Hubo un error: ' + (result.message || 'No se pudo guardar'));
+                        alert('No se pudo eliminar');
                     }
-                } catch (error) {
-                    console.error('Error de red:', error);
-                    alert('Error de conexión con el servidor.');
-                } finally {
-                    btnSubmit.disabled = false;
-                    btnSubmit.textContent = 'Guardar Artículo Permanente';
                 }
-            });
+            };
+
+            loadInventory();
         });
     </script>
-
-    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
