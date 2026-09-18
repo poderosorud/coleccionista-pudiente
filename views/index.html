@@ -152,10 +152,10 @@
                     const whatsappNumber = "529512431149";
                     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 
-                    // Manejo del botón de galería adaptado al nuevo formato de objetos {id, image_path}
+                    // Manejo seguro del botón de galería extrayendo las rutas de los objetos { id, image_path }
                     let galleryButtonHtml = '';
-                    if (product.additional_images && product.additional_images.length > 0) {
-                        // Extraemos solo las rutas para el visor del catálogo público
+                    if (product.additional_images && Array.isArray(product.additional_images) && product.additional_images.length > 0) {
+                        // Extraemos únicamente el texto de las rutas Base64 para evitar errores en el JSON
                         const pathsOnly = product.additional_images.map(img => img.image_path);
                         const jsonImgs = JSON.stringify(pathsOnly).replace(/"/g, '&quot;');
                         galleryButtonHtml = `
