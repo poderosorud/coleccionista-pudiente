@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos (views y la raíz para el logo.png)
+// Servir vistas estáticas y archivos de la raíz (como el logo.png)
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.static(path.join(__dirname))); 
 
@@ -22,8 +22,7 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
-// Configuración de Multer en memoria RAM para convertir la imagen a Base64
-// Esto evita que las fotos se borren cuando Render reinicie su servidor local
+// Configuración de Multer en memoria RAM para procesar las imágenes en Base64
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -84,13 +83,13 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// Crear producto con imagen guardada permanentemente en Base64 en MySQL
 app.post('/api/products', upload.single('image'), async (req, res) => {
     try {
         const { title, price, stock, brand_id, category_id } = req.body;
         
         let imagePath = '';
         if (req.file) {
-            // Convertir la imagen a Base64 para guardarla permanentemente en MySQL (HostGator)
             const b64 = Buffer.from(req.file.buffer).toString('base64');
             imagePath = `data:${req.file.mimetype};base64,${b64}`;
         }
@@ -109,7 +108,7 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             category_id || null
         ]);
 
-        res.json({ success: true, message: 'Artículo guardado con éxito', id: result.insertId });
+        res.json({ success: true, message: 'Artículo guardado permanentemente', id: result.insertId });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Error en el servidor al guardar el artículo' });
@@ -140,7 +139,7 @@ app.put('/api/products/:id/stock', async (req, res) => {
     }
 });
 
-// Editar un artículo (soporta actualización de datos y reemplazo opcional de imagen)
+// Editar un artículo (actualiza datos y la imagen nueva en Base64 si se adjunta)
 app.put('/api/products/:id', upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -171,7 +170,6 @@ app.put('/api/products/:id', upload.single('image'), async (req, res) => {
     }
 });
 
-// Eliminar un artículo del inventario
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -195,7 +193,7 @@ app.post('/api/brands', async (req, res) => {
         res.json({ success: true, id: result.insertId, name });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Error al crear la marca (quizás ya exista)' });
+        res.status(500).json({ success: false, message: 'Error al crear la marca' });
     }
 });
 
@@ -206,7 +204,7 @@ app.post('/api/categories', async (req, res) => {
         res.json({ success: true, id: result.insertId, name });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Error al crear la categoría (quizás ya exista)' });
+        res.status(500).json({ success: false, message: 'Error al crear la categoría' });
     }
 });
 
