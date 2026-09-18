@@ -13,6 +13,9 @@
             .img-thumb { height: 120px; border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-top-right-radius: 0; }
         }
         .preview-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #0d6efd; display: none; }
+        .gallery-thumb-container { position: relative; display: inline-block; }
+        .gallery-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #ced4da; }
+        .btn-delete-img { position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -33,12 +36,12 @@
         </div>
     </div>
 
-    <!-- MODAL DE EDICIÓN -->
+    <!-- MODAL DE EDICIÓN CON CRUD DE IMÁGENES -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content p-3">
                 <div class="modal-header">
-                    <h5 class="modal-title text-primary fw-bold">✏️ Editar Artículo</h5>
+                    <h5 class="modal-title text-primary fw-bold">✏️ Editar Artículo y Galería</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -81,11 +84,19 @@
                             </div>
                         </div>
 
-                        <!-- Galería con Contador en Tiempo Real -->
+                        <!-- Galería Existente (CRUD individual por ID) -->
+                        <div class="mb-3 border p-3 rounded bg-light">
+                            <label class="form-label fw-bold text-dark">🖼️ Fotos Actuales en la Galería (Haz clic en la X para eliminar alguna)</label>
+                            <div id="existingGalleryContainer" class="d-flex flex-wrap gap-2 mt-2">
+                                <!-- Se inyectan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Añadir más fotos a la galería -->
                         <div class="mb-3">
-                            <label class="form-label fw-bold">🖼️ Añadir a la Galería Detallada (Opcional)</label>
+                            <label class="form-label fw-bold">➕ Agregar Nuevas Fotos a la Galería</label>
                             <input type="file" class="form-control" id="edit_additional_images" name="additional_images" multiple accept="image/*">
-                            <div id="galleryCounter" class="form-text text-muted fw-semibold mt-1">Ninguna imagen adicional seleccionada.</div>
+                            <div id="galleryCounter" class="form-text text-muted fw-semibold mt-1">Ninguna imagen nueva seleccionada.</div>
                         </div>
 
                         <div class="d-grid">
@@ -111,11 +122,11 @@
             const mainImagePreview = document.getElementById('mainImagePreview');
             const additionalImagesInput = document.getElementById('edit_additional_images');
             const galleryCounter = document.getElementById('galleryCounter');
+            const existingGalleryContainer = document.getElementById('existingGalleryContainer');
 
             let brandsList = [];
             let categoriesList = [];
 
-            // 1. Mostrar vista previa de la foto principal seleccionada
             mainImageInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -130,14 +141,13 @@
                 }
             });
 
-            // 2. Mostrar contador dinámico de fotos adicionales seleccionadas
             additionalImagesInput.addEventListener('change', (e) => {
                 const count = e.target.files.length;
                 if (count > 0) {
-                    galleryCounter.textContent = `✅ Has seleccionado ${count} foto(s) nueva(s) para la galería.`;
+                    galleryCounter.textContent = `✅ Has seleccionado ${count} foto(s) nueva(s) para añadir.`;
                     galleryCounter.className = "form-text text-success fw-bold mt-1";
                 } else {
-                    galleryCounter.textContent = "Ninguna imagen adicional seleccionada.";
+                    galleryCounter.textContent = "Ninguna imagen nueva seleccionada.";
                     galleryCounter.className = "form-text text-muted fw-semibold mt-1";
                 }
             });
@@ -206,12 +216,27 @@
                 document.getElementById('edit_price').value = product.price;
                 document.getElementById('edit_stock').value = product.stock;
                 
-                // Resetear previsualizaciones y campos de archivo
                 mainImageInput.value = '';
                 mainImagePreview.style.display = 'none';
                 additionalImagesInput.value = '';
-                galleryCounter.textContent = `ℹ️ Este artículo ya tiene ${product.additional_images ? product.additional_images.length : 0} foto(s) en su galería. Puedes agregar más si lo deseas.`;
+                galleryCounter.textContent = "Ninguna imagen nueva seleccionada.";
                 galleryCounter.className = "form-text text-muted fw-semibold mt-1";
+
+                // Renderizar galería existente con ID único para borrado limpio
+                existingGalleryContainer.innerHTML = '';
+                if (product.additional_images && product.additional_images.length > 0) {
+                    product.additional_images.forEach((imgObj) => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'gallery-thumb-container';
+                        wrapper.innerHTML = `
+                            <img src="${imgObj.image_path}" class="gallery-thumb" alt="Foto galería">
+                            <button type="button" class="btn-delete-img" onclick="deleteGalleryImage(${imgObj.id})">×</button>
+                        `;
+                        existingGalleryContainer.appendChild(wrapper);
+                    });
+                } else {
+                    existingGalleryContainer.innerHTML = '<span class="text-muted small">Este artículo no tiene fotos en su galería secundaria.</span>';
+                }
 
                 editBrandSelect.innerHTML = '';
                 brandsList.forEach(b => {
@@ -234,33 +259,50 @@
                 editModal.show();
             };
 
+            // Función CRUD optimizada por ID numérico para eliminar foto de galería
+            window.deleteGalleryImage = async (imageId) => {
+                if (confirm('¿Deseas eliminar permanentemente esta foto de la galería?')) {
+                    try {
+                        const res = await fetch(`/api/product-images/${imageId}`, {
+                            method: 'DELETE'
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('🗑️ Foto eliminada de la galería.');
+                            editModal.hide();
+                            loadInventory();
+                        } else {
+                            alert('No se pudo eliminar la imagen.');
+                        }
+                    } catch (err) {
+                        console.error('Error al borrar imagen:', err);
+                        alert('Error de red al intentar eliminar la imagen.');
+                    }
+                }
+            };
+
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('edit_id').value;
                 
                 btnUpdate.disabled = true;
-                btnUpdate.textContent = 'Subiendo imágenes y guardando cambios...';
+                btnUpdate.textContent = 'Actualizando cambios...';
 
                 try {
                     const formData = new FormData(editForm);
-
-                    const res = await fetch(`/api/products/${id}`, { 
-                        method: 'PUT', 
-                        body: formData 
-                    });
-                    
+                    const res = await fetch(`/api/products/${id}`, { method: 'PUT', body: formData });
                     const result = await res.json();
 
                     if (result.success) {
                         editModal.hide();
                         loadInventory();
-                        alert('✨ ¡Artículo e imágenes actualizados y guardados permanentemente con éxito!');
+                        alert('✨ ¡Artículo y galería actualizados con éxito!');
                     } else {
                         alert('Error al actualizar: ' + (result.message || 'Desconocido'));
                     }
                 } catch (err) {
                     console.error('Error de red al editar:', err);
-                    alert('Error de conexión con el servidor al intentar subir las imágenes.');
+                    alert('Error de conexión con el servidor.');
                 } finally {
                     btnUpdate.disabled = false;
                     btnUpdate.textContent = 'Guardar Cambios';
@@ -268,7 +310,7 @@
             });
 
             window.deleteProduct = async (id) => {
-                if (confirm('¿Estás seguro de eliminar este vehículo?')) {
+                if (confirm('¿Estás seguro de eliminar este vehículo por completo?')) {
                     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
                     const data = await res.json();
                     if (data.success) loadInventory();

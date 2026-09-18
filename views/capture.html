@@ -10,6 +10,7 @@
         .card { background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 16px; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05); }
         .form-label { font-weight: 600; color: #343a40; }
         .form-control, .form-select { padding: 0.75rem; font-size: 1rem; border-radius: 8px; }
+        .preview-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #198754; display: none; }
     </style>
 </head>
 <body>
@@ -59,13 +60,16 @@
 
                         <div class="mb-3">
                             <label for="image" class="form-label">📸 Fotografía Principal</label>
-                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                                <img id="mainImagePreview" class="preview-img" alt="Vista previa">
+                            </div>
                         </div>
 
                         <div class="mb-4">
                             <label for="additional_images" class="form-label">🖼️ Galería Detallada (Opcional, máx. 5 fotos)</label>
                             <input type="file" class="form-control" id="additional_images" name="additional_images" multiple accept="image/*">
-                            <div class="form-text small">Puedes seleccionar varias fotos directamente desde la galería de tu celular.</div>
+                            <div id="galleryCounter" class="form-text small">Puedes seleccionar varias fotos directamente desde la galería de tu celular.</div>
                         </div>
 
                         <div class="d-grid">
@@ -83,6 +87,38 @@
             const categorySelect = document.getElementById('category_id');
             const captureForm = document.getElementById('captureForm');
             const btnCapture = document.getElementById('btnCapture');
+            
+            const mainImageInput = document.getElementById('image');
+            const mainImagePreview = document.getElementById('mainImagePreview');
+            const additionalImagesInput = document.getElementById('additional_images');
+            const galleryCounter = document.getElementById('galleryCounter');
+
+            // Vista previa foto principal en captura
+            mainImageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        mainImagePreview.src = event.target.result;
+                        mainImagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    mainImagePreview.style.display = 'none';
+                }
+            });
+
+            // Contador de galería en captura
+            additionalImagesInput.addEventListener('change', (e) => {
+                const count = e.target.files.length;
+                if (count > 0) {
+                    galleryCounter.textContent = `✅ Has seleccionado ${count} foto(s) para la galería.`;
+                    galleryCounter.className = "form-text text-success fw-bold small";
+                } else {
+                    galleryCounter.textContent = "Puedes seleccionar varias fotos directamente desde la galería de tu celular.";
+                    galleryCounter.className = "form-text text-muted small";
+                }
+            });
 
             try {
                 const [brandsRes, categoriesRes] = await Promise.all([
@@ -114,8 +150,11 @@
                     const result = await res.json();
 
                     if (result.success) {
-                        alert('¡Vehículo y galería guardados con éxito!');
+                        alert('✨ ¡Vehículo y galería guardados con éxito!');
                         captureForm.reset();
+                        mainImagePreview.style.display = 'none';
+                        galleryCounter.textContent = "Puedes seleccionar varias fotos directamente desde la galería de tu celular.";
+                        galleryCounter.className = "form-text text-muted small";
                     } else {
                         alert('Error: ' + (result.message || 'No se pudo guardar'));
                     }

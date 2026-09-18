@@ -83,7 +83,6 @@
 
         async function initFilters() {
             try {
-                // Cargar Marcas
                 const brandsRes = await fetch('/api/brands');
                 const brands = await brandsRes.json();
                 const brandContainer = document.getElementById('brandFilters');
@@ -91,7 +90,6 @@
                     brandContainer.innerHTML += `<button onclick="filterBy('brand', '${b.id}')" class="filter-btn-brand px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg whitespace-nowrap transition" data-id="${b.id}">${b.name}</button>`;
                 });
 
-                // Cargar Categorías
                 const catRes = await fetch('/api/categories');
                 const categories = await catRes.json();
                 const catContainer = document.getElementById('categoryFilters');
@@ -151,13 +149,15 @@
                         message = encodeURIComponent(`Hola, me interesa comprar: *${product.title}* ($${product.price}). ¿Hacemos trato?`);
                     }
 
-                    const whatsappNumber = "529512431149"; // Tu número en Oaxaca
+                    const whatsappNumber = "529512431149";
                     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 
-                    // Botón opcional para ver galería de fotos detalladas si existen
+                    // Manejo del botón de galería adaptado al nuevo formato de objetos {id, image_path}
                     let galleryButtonHtml = '';
                     if (product.additional_images && product.additional_images.length > 0) {
-                        const jsonImgs = JSON.stringify(product.additional_images).replace(/"/g, '&quot;');
+                        // Extraemos solo las rutas para el visor del catálogo público
+                        const pathsOnly = product.additional_images.map(img => img.image_path);
+                        const jsonImgs = JSON.stringify(pathsOnly).replace(/"/g, '&quot;');
                         galleryButtonHtml = `
                             <button onclick='openGallery(${jsonImgs})' class="w-full mt-2 bg-blue-600/80 hover:bg-blue-600 text-white font-medium py-2 rounded-xl transition shadow-md text-xs flex items-center justify-center gap-1.5">
                                 🖼️ Ver Fotos Detalladas (${product.additional_images.length})
@@ -204,7 +204,6 @@
             }
         }
 
-        // Función para abrir la galería interactiva en el modal
         function openGallery(imagesArray) {
             const container = document.getElementById('galleryImagesContainer');
             container.innerHTML = '';
@@ -218,8 +217,7 @@
                 container.appendChild(img);
             });
 
-            const galleryModal = new bootstrap.Modal(document.getElementById('galleryModal'));
-            galleryModal.show();
+            new bootstrap.Modal(document.getElementById('galleryModal')).show();
         }
 
         function filterBy(type, id) {
@@ -255,7 +253,6 @@
         initFilters();
         loadProducts();
     </script>
-    <!-- Bootstrap JS Bundle para controlar el modal correctamente -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
