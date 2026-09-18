@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-// Aumentamos el límite de tamaño para permitir la subida de múltiples fotos en Base64 sin error de conexión
+// Límite de 50mb para permitir la subida de múltiples fotos en Base64 sin corte de conexión
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -52,7 +52,7 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
-// Obtener productos incluyendo sus filtros y la galería de imágenes adicionales
+// Obtener productos incluyendo el ID y la ruta de cada imagen de la galería
 app.get('/api/products', async (req, res) => {
     try {
         const { search, brand, category } = req.query;
@@ -83,8 +83,9 @@ app.get('/api/products', async (req, res) => {
         const [products] = await pool.execute(query, params);
 
         for (let product of products) {
-            const [images] = await pool.execute('SELECT image_path FROM product_images WHERE product_id = ?', [product.id]);
-            product.additional_images = images.map(img => img.image_path);
+            // Traemos el ID y el path para que el admin pueda borrarlas de forma limpia por ID
+            const [images] = await pool.execute('SELECT id, image_path FROM product_images WHERE product_id = ?', [product.id]);
+            product.additional_images = images; 
         }
 
         res.json(products);
@@ -147,7 +148,7 @@ app.post('/api/products', cpUpload, async (req, res) => {
     }
 });
 
-// Actualizar / Editar un artículo (soporta actualización de datos, reemplazo de foto principal y adición de galería)
+// Actualizar un artículo
 app.put('/api/products/:id', cpUpload, async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -175,7 +176,6 @@ app.put('/api/products/:id', cpUpload, async (req, res) => {
 
         await connection.execute(updateQuery, queryParams);
 
-        // Si se subieron nuevas fotos adicionales, las agregamos a la galería
         if (req.files && req.files['additional_images']) {
             for (const file of req.files['additional_images']) {
                 const b64 = Buffer.from(file.buffer).toString('base64');
@@ -198,7 +198,24 @@ app.put('/api/products/:id', cpUpload, async (req, res) => {
     }
 });
 
-// Eliminar un artículo del inventario
+// ELIMINAR una foto específica de la galería usando su ID único
+app.delete('/api/product-images/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.execute('DELETE FROM product_images WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Imagen no encontrada' });
+        }
+
+        res.json({ success: true, message: 'Imagen de galería eliminada correctamente' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Error al eliminar la imagen de la galería' });
+    }
+});
+
+// Eliminar un artículo del inventario por completo
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
