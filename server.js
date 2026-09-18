@@ -7,7 +7,6 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-// Límite de 50mb para permitir la subida de múltiples fotos en Base64 sin corte de conexión
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -21,7 +20,6 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
-// Configuración de Multer en memoria RAM
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -52,7 +50,7 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
-// Obtener productos incluyendo el ID y la ruta de cada imagen de la galería
+// Obtener productos blindado contra errores de galería
 app.get('/api/products', async (req, res) => {
     try {
         const { search, brand, category } = req.query;
@@ -82,16 +80,21 @@ app.get('/api/products', async (req, res) => {
 
         const [products] = await pool.execute(query, params);
 
+        // Intentar buscar imágenes adicionales de forma segura sin romper la respuesta general
         for (let product of products) {
-            // Traemos el ID y el path para que el admin pueda borrarlas de forma limpia por ID
-            const [images] = await pool.execute('SELECT id, image_path FROM product_images WHERE product_id = ?', [product.id]);
-            product.additional_images = images; 
+            try {
+                const [images] = await pool.execute('SELECT id, image_path FROM product_images WHERE product_id = ?', [product.id]);
+                product.additional_images = images || [];
+            } catch (imgErr) {
+                console.warn(`No se pudieron cargar imágenes adicionales para el producto ${product.id}:`, imgErr.message);
+                product.additional_images = [];
+            }
         }
 
         res.json(products);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Error al obtener productos' });
+        console.error('Error crítico en /api/products:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener productos: ' + error.message });
     }
 });
 
@@ -198,33 +201,23 @@ app.put('/api/products/:id', cpUpload, async (req, res) => {
     }
 });
 
-// ELIMINAR una foto específica de la galería usando su ID único
+// Eliminar foto específica de la galería por ID
 app.delete('/api/product-images/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const [result] = await pool.execute('DELETE FROM product_images WHERE id = ?', [id]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Imagen no encontrada' });
-        }
-
-        res.json({ success: true, message: 'Imagen de galería eliminada correctamente' });
+        await pool.execute('DELETE FROM product_images WHERE id = ?', [id]);
+        res.json({ success: true, message: 'Imagen eliminada' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Error al eliminar la imagen de la galería' });
+        res.status(500).json({ success: false, message: 'Error al eliminar imagen' });
     }
 });
 
-// Eliminar un artículo del inventario por completo
+// Eliminar producto
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const [result] = await pool.execute('DELETE FROM products WHERE id = ?', [id]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Producto no encontrado' });
-        }
-
         res.json({ success: true, message: 'Artículo eliminado correctamente' });
     } catch (error) {
         console.error(error);
@@ -254,7 +247,6 @@ app.post('/api/categories', async (req, res) => {
     }
 });
 
-// Vistas
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
