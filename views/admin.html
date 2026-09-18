@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - El Coleccionista pudiente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen p-4 sm:p-6 pb-16">
+    <header class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center border-b border-gray-800 pb-4 gap-4">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-emerald-400">Panel de Control 🛠️</h1>
+            <p class="text-gray-400 text-xs">Administración general de "El Coleccionista pudiente"</p>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto justify-center">
+            <a href="/capture.html" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold rounded-xl transition shadow-md">➕ Nuevo Auto</a>
+            <a href="/index.html" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-xs font-semibold rounded-xl transition shadow-md">🌐 Ver Web</a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- SECCIÓN: Agregar Marcas y Categorías rápidamente -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-xl">
+            <!-- Formulario Marca -->
+            <form id="brandForm" class="space-y-2">
+                <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider">Nueva Marca</label>
+                <div class="flex gap-2">
+                    <input type="text" id="brandName" placeholder="Ej. Johnny Lightning" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                    <button type="submit" class="px-4 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-xl transition">Agregar</button>
+                </div>
+            </form>
+
+            <!-- Formulario Categoría -->
+            <form id="categoryForm" class="space-y-2">
+                <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider">Nueva Categoría</label>
+                <div class="flex gap-2">
+                    <input type="text" id="categoryName" placeholder="Ej. Super Treasure Hunt" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                    <button type="submit" class="px-4 bg-purple-600 hover:bg-purple-700 text-xs font-bold rounded-xl transition">Agregar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- LISTADO DE ARTÍCULOS -->
+        <div class="space-y-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Inventario Registrado</h2>
+            <div id="loading" class="text-center text-gray-500 py-10">Cargando inventario...</div>
+            <div id="adminList" class="space-y-3">
+                <!-- Dinámico -->
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE EDICIÓN -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-gray-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-lg text-emerald-400">Editar Artículo ✏️</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white text-lg font-bold">&times;</button>
+            </div>
+            
+            <form id="editForm" class="space-y-3">
+                <input type="hidden" id="editId">
+                
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Descripción / Modelo</label>
+                    <input type="text" id="editTitle" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Precio ($)</label>
+                        <input type="number" step="0.01" id="editPrice" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Stock</label>
+                        <input type="number" id="editStock" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Marca</label>
+                        <select id="editBrand" class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Categoría</label>
+                        <select id="editCategory" class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500"></select>
+                    </div>
+                </div>
+
+                <!-- Reemplazar Imagen -->
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Cambiar Imagen (Opcional)</label>
+                    <input type="file" id="editImage" accept="image/*" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer border border-gray-700 rounded-xl p-1 bg-gray-800/50">
+                    <p class="text-[10px] text-gray-500 mt-1">Si dejas este campo vacío, se conservará la foto actual.</p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="w-1/2 py-2.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold rounded-xl transition">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let globalBrands = [];
+        let globalCategories = [];
+
+        async function loadSelectOptions() {
+            try {
+                const [bRes, cRes] = await Promise.all([fetch('/api/brands'), fetch('/api/categories')]);
+                globalBrands = await bRes.json();
+                globalCategories = await cRes.json();
+
+                const brandSelect = document.getElementById('editBrand');
+                const catSelect = document.getElementById('editCategory');
+                
+                brandSelect.innerHTML = globalBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+                catSelect.innerHTML = globalCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            } catch (e) {
+                console.error("Error cargando opciones", e);
+            }
+        }
+
+        async function loadAdminProducts() {
+            const container = document.getElementById('adminList');
+            const loading = document.getElementById('loading');
+
+            try {
+                const res = await fetch('/api/products');
+                const products = await res.json();
+
+                loading.style.display = 'none';
+
+                if (products.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-500 py-12">No hay artículos registrados.</p>';
+                    return;
+                }
+
+                container.innerHTML = products.map(p => {
+                    const isApartado = p.status === 'apartado';
+                    return `
+                        <div class="bg-gray-900 border ${isApartado ? 'border-amber-500/50 bg-amber-950/10' : 'border-gray-800'} rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition">
+                            
+                            <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <img src="${p.image_path}" class="w-16 h-16 object-cover rounded-xl border border-gray-700 shrink-0">
+                                <div>
+                                    <h2 class="font-semibold text-sm sm:text-base text-gray-100 line-clamp-1">${p.title}</h2>
+                                    <p class="text-emerald-400 font-bold text-sm">$${p.price} MXN <span class="text-xs text-gray-400 font-normal">| Stock: ${p.stock}</span></p>
+                                    <div class="flex gap-1.5 mt-1 flex-wrap">
+                                        <span class="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded-full border border-blue-800/50">${p.brand_name || 'Sin marca'}</span>
+                                        <span class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full border border-purple-800/50">${p.category_name || 'Sin categoría'}</span>
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isApartado ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                                            ${p.status || 'disponible'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                                <button onclick='openEditModal(${JSON.stringify(p)})' class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-xl transition shadow-md">
+                                    Editar ✏️
+                                </button>
+                                
+                                ${isApartado ? `
+                                    <button onclick="updateStatus('${p.id}', 'disponible',${p.stock})" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold rounded-xl transition shadow-md">
+                                        Liberar ✅
+                                    </button>
+                                ` : `
+                                    <button onclick="updateStatus('${p.id}', 'apartado',${p.stock})" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-xs font-bold rounded-xl transition shadow-md">
+                                        Apartar 🔒
+                                    </button>
+                                `}
+
+                                <button onclick="deleteProduct('${p.id}')" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-xs font-bold rounded-xl transition shadow-md" title="Eliminar registro">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error(error);
+                loading.textContent = 'Error al cargar el panel.';
+            }
+        }
+
+        document.getElementById('brandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('brandName').value;
+            const res = await fetch('/api/brands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('brandName').value = '';
+                loadSelectOptions();
+                alert('¡Marca agregada con éxito!');
+            } else {
+                alert('Error al agregar marca (puede que ya exista)');
+            }
+        });
+
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('categoryName').value;
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('categoryName').value = '';
+                loadSelectOptions();
+                alert('¡Categoría agregada con éxito!');
+            } else {
+                alert('Error al agregar categoría (puede que ya exista)');
+            }
+        });
+
+        async function updateStatus(id, newStatus, currentStock) {
+            try {
+                const res = await fetch(`/api/products/${id}/stock`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, stock: currentStock })
+                });
+                const result = await res.json();
+                if (result.success) loadAdminProducts();
+            } catch (e) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('¿Estás seguro de eliminar este artículo del catálogo?')) return;
+            try {
+                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if(data.success) {
+                    loadAdminProducts();
+                } else {
+                    alert('No se pudo eliminar el artículo');
+                }
+            } catch (e) {
+                alert('Error de conexión con el servidor');
+            }
+        }
+
+        function openEditModal(product) {
+            document.getElementById('editId').value = product.id;
+            document.getElementById('editTitle').value = product.title;
+            document.getElementById('editPrice').value = product.price;
+            document.getElementById('editStock').value = product.stock;
+            document.getElementById('editBrand').value = product.brand_id || '';
+            document.getElementById('editCategory').value = product.category_id || '';
+            document.getElementById('editImage').value = '';
+            
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('editTitle').value);
+            formData.append('price', document.getElementById('editPrice').value);
+            formData.append('stock', document.getElementById('editStock').value);
+            formData.append('brand_id', document.getElementById('editBrand').value);
+            formData.append('category_id', document.getElementById('editCategory').value);
+            
+            const imageFile = document.getElementById('editImage').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            const res = await fetch(`/api/products/${id}`, {
+                method: 'PUT',
+                body: formData
+            });
+            const data = await res.json();
+            if(data.success) {
+                closeEditModal();
+                loadAdminProducts();
+                alert('¡Artículo actualizado correctamente!');
+            } else {
+                alert('Error al actualizar el artículo');
+            }
+        });
+
+        loadSelectOptions();
+        loadAdminProducts();
+    </script>
+</body>
+</html>

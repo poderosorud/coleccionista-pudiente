@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Coleccionista pudiente - Oaxaca, México</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen pb-12">
+    <header class="py-6 px-4 text-center border-b border-gray-800 bg-gray-900/50 backdrop-blur sticky top-0 z-50">
+        <!-- Logotipo de alta legibilidad y Título del Negocio -->
+        <div class="flex flex-col items-center justify-center space-y-3 mb-2">
+            <div class="px-4 py-2.5 bg-white rounded-2xl shadow-xl border-2 border-emerald-500/55 flex items-center justify-center">
+                <img src="/logo.png" alt="Logo El Coleccionista pudiente" class="h-20 sm:h-24 w-auto object-contain">
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-wider text-emerald-400">El Coleccionista pudiente</h1>
+        </div>
+        
+        <p class="text-gray-400 text-xs sm:text-sm">📍 Oaxaca, México | Catálogo de articulos existentes</p>
+
+        <!-- Barra de búsqueda sensible -->
+        <div class="max-w-xl mx-auto mt-4 px-2">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Buscar por modelo, marca o serie (ej. Skyline, RLC)..." 
+                class="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 text-sm shadow-inner"
+            >
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+        
+        <!-- Menú de Filtros por Marca y Categoría -->
+        <div class="space-y-3 bg-gray-900/40 p-4 rounded-2xl border border-gray-800/80">
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">Marcas:</span>
+                <div id="brandFilters" class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    <button onclick="filterBy('brand', '')" class="filter-btn-brand px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg whitespace-nowrap transition">Todas</button>
+                    <!-- Se cargan dinámicamente -->
+                </div>
+            </div>
+
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">Categorías:</span>
+                <div id="categoryFilters" class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    <button onclick="filterBy('category', '')" class="filter-btn-cat px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg whitespace-nowrap transition">Todas</button>
+                    <!-- Se cargan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuadrícula de Productos -->
+        <div id="loading" class="text-center text-gray-500 py-12 text-lg">Cargando catálogo...</div>
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            <!-- Dinámico -->
+        </div>
+    </main>
+
+    <script>
+        let currentBrand = '';
+        let currentCategory = '';
+        let searchTimeout = null;
+
+        async function initFilters() {
+            try {
+                // Cargar Marcas
+                const brandsRes = await fetch('/api/brands');
+                const brands = await brandsRes.json();
+                const brandContainer = document.getElementById('brandFilters');
+                brands.forEach(b => {
+                    brandContainer.innerHTML += `<button onclick="filterBy('brand', '${b.id}')" class="filter-btn-brand px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg whitespace-nowrap transition" data-id="${b.id}">${b.name}</button>`;
+                });
+
+                // Cargar Categorías
+                const catRes = await fetch('/api/categories');
+                const categories = await catRes.json();
+                const catContainer = document.getElementById('categoryFilters');
+                categories.forEach(c => {
+                    catContainer.innerHTML += `<button onclick="filterBy('category', '${c.id}')" class="filter-btn-cat px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg whitespace-nowrap transition" data-id="${c.id}">${c.name}</button>`;
+                });
+            } catch (e) {
+                console.error("Error cargando filtros", e);
+            }
+        }
+
+        async function loadProducts() {
+            const grid = document.getElementById('productGrid');
+            const loading = document.getElementById('loading');
+            const searchVal = document.getElementById('searchInput').value;
+
+            loading.style.display = 'block';
+            grid.innerHTML = '';
+
+            let url = `/api/products?search=${encodeURIComponent(searchVal)}`;
+            if (currentBrand) url += `&brand=${currentBrand}`;
+            if (currentCategory) url += `&category=${currentCategory}`;
+
+            try {
+                const response = await fetch(url);
+                const products = await response.json();
+
+                loading.style.display = 'none';
+
+                if (products.length === 0) {
+                    grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-12">No se encontraron artículos con esos criterios.</p>';
+                    return;
+                }
+
+                grid.innerHTML = products.map(product => {
+                    const isApartado = product.status === 'apartado';
+                    const stock = product.stock;
+                    
+                    let statusBadge = '';
+                    let stockText = '';
+                    let actionButtonText = 'Comprar / Apartar 📱';
+                    let actionButtonClass = 'bg-emerald-600 hover:bg-emerald-700 text-white';
+                    let message = '';
+
+                    if (isApartado && stock === 1) {
+                        statusBadge = `<div class="absolute top-3 right-3 bg-amber-500 text-black font-black text-xs px-3 py-1 rounded-full shadow-lg tracking-wider uppercase z-10 border border-amber-300">🔒 Apartado</div>`;
+                        stockText = `<span class="text-xs bg-amber-950/80 text-amber-300 px-2.5 py-1 rounded-full border border-amber-700/50">Pieza única apartada</span>`;
+                        actionButtonText = 'Consultar Liberación 📌';
+                        actionButtonClass = 'bg-amber-600/80 hover:bg-amber-600 text-white';
+                        message = encodeURIComponent(`Hola, vi el modelo *${product.title}* marcado como apartado. ¿Aún hay posibilidad de que se libere o tengan otro similar?`);
+                    } else if (isApartado && stock > 1) {
+                        statusBadge = `<div class="absolute top-3 right-3 bg-blue-600 text-white font-black text-xs px-3 py-1 rounded-full shadow-lg tracking-wider uppercase z-10 border border-blue-400">⚡ Stock Múltiple</div>`;
+                        stockText = `<span class="text-xs bg-gray-800 text-gray-300 px-2.5 py-1 rounded-full border border-gray-700">Disponibles: <strong class="text-emerald-400">${stock}</strong> (1 Apartado)</span>`;
+                        message = encodeURIComponent(`Hola, me interesa el modelo *${product.title}* ($${product.price}). Veo que hay existencias, ¿aún está disponible?`);
+                    } else {
+                        stockText = `<span class="text-xs bg-gray-800 text-gray-300 px-2.5 py-1 rounded-full border border-gray-700">Stock: <strong class="text-emerald-400">${stock}</strong></span>`;
+                        message = encodeURIComponent(`Hola, me interesa comprar: *${product.title}* ($${product.price}). ¿Hacemos trato?`);
+                    }
+
+                    const whatsappNumber = "529512431149"; // Tu número en Oaxaca
+                    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+
+                    return `
+                        <div class="bg-gray-900 border ${isApartado && stock <= 1 ? 'border-amber-500/40 opacity-90' : 'border-gray-800'} rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between transition relative">
+                            
+                            ${statusBadge}
+
+                            <div>
+                                <img src="${product.image_path}" alt="${product.title}" class="w-full h-48 object-cover ${isApartado && stock <= 1 ? 'grayscale-[20%]' : ''}">
+                                <div class="p-4">
+                                    <div class="flex gap-1.5 mb-2 flex-wrap">
+                                        ${product.brand_name ? `<span class="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded-full border border-blue-800/50">${product.brand_name}</span>` : ''}
+                                        ${product.category_name ? `<span class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full border border-purple-800/50">${product.category_name}</span>` : ''}
+                                    </div>
+                                    <h2 class="font-semibold text-sm sm:text-base line-clamp-2 text-gray-100">${product.title}</h2>
+                                    <div class="flex justify-between items-center mt-3">
+                                        <span class="text-lg font-bold ${isApartado && stock <= 1 ? 'text-gray-400 line-through' : 'text-emerald-400'}">$${Number(product.price).toFixed(2)}</span>
+                                        ${stockText}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 pt-0">
+                                <a 
+                                    href="${whatsappUrl}" 
+                                    target="_blank"
+                                    class="block text-center w-full ${actionButtonClass} font-medium py-2.5 rounded-xl transition shadow-lg text-sm"
+                                >
+                                    ${actionButtonText}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error(error);
+                loading.textContent = 'Error al cargar el catálogo.';
+            }
+        }
+
+        function filterBy(type, id) {
+            if (type === 'brand') {
+                currentBrand = id;
+                document.querySelectorAll('.filter-btn-brand').forEach(btn => {
+                    if ((id === '' && !btn.dataset.id) || btn.dataset.id === id) {
+                        btn.className = "filter-btn-brand px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg whitespace-nowrap transition";
+                    } else {
+                        btn.className = "filter-btn-brand px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg whitespace-nowrap transition";
+                    }
+                });
+            } else if (type === 'category') {
+                currentCategory = id;
+                document.querySelectorAll('.filter-btn-cat').forEach(btn => {
+                    if ((id === '' && !btn.dataset.id) || btn.dataset.id === id) {
+                        btn.className = "filter-btn-cat px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg whitespace-nowrap transition";
+                    } else {
+                        btn.className = "filter-btn-cat px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg whitespace-nowrap transition";
+                    }
+                });
+            }
+            loadProducts();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadProducts();
+            }, 300);
+        });
+
+        initFilters();
+        loadProducts();
+    </script>
+</body>
+</html>

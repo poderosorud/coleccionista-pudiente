@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura Rápida - Autos a Escala</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen p-4 flex flex-col items-center">
+    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl my-6">
+        <h1 class="text-2xl font-bold text-center mb-6 text-emerald-400">Captura de Inventario 🚗</h1>
+        
+        <form id="captureForm" class="space-y-4">
+            <!-- Selector de cámara para móviles -->
+            <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-xl p-4 bg-gray-800/50">
+                <input 
+                    type="file" 
+                    id="imageInput" 
+                    accept="image/*" 
+                    capture="environment" 
+                    required
+                    class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Descripción del auto (Modelo, Serie)</label>
+                <input 
+                    type="text" 
+                    id="title" 
+                    placeholder="Ej. Nissan Skyline GT-R R34" 
+                    required
+                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
+                >
+            </div>
+
+            <!-- Selector de Marca dinámico -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Marca</label>
+                <select 
+                    id="brand_id" 
+                    required
+                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
+                >
+                    <option value="">Selecciona una marca...</option>
+                </select>
+            </div>
+
+            <!-- Selector de Categoría dinámico -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Categoría</label>
+                <select 
+                    id="category_id" 
+                    required
+                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
+                >
+                    <option value="">Selecciona una categoría...</option>
+                </select>
+            </div>
+
+            <div class="flex gap-4">
+                <div class="w-1/2">
+                    <label class="block text-sm font-medium text-gray-300">Precio ($)</label>
+                    <input 
+                        type="number" 
+                        step="0.01" 
+                        id="price" 
+                        placeholder="0.00" 
+                        required
+                        class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
+                    />
+                </div>
+                <div class="w-1/2">
+                    <label class="block text-sm font-medium text-gray-300">Piezas disp.</label>
+                    <input 
+                        type="number" 
+                        id="stock" 
+                        value="1" 
+                        required
+                        class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
+                    />
+                </div>
+            </div>
+
+            <button 
+                type="submit" 
+                id="submitBtn"
+                class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl transition shadow-lg text-lg"
+            >
+                Guardar y Siguiente 🚀
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Cargar marcas y categorías al abrir la página de captura
+        async function loadSelectOptions() {
+            try {
+                // Cargar marcas
+                const brandsRes = await fetch('/api/brands');
+                const brands = await brandsRes.json();
+                const brandSelect = document.getElementById('brand_id');
+                brands.forEach(b => {
+                    brandSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                });
+
+                // Cargar categorías
+                const catRes = await fetch('/api/categories');
+                const categories = await catRes.json();
+                const catSelect = document.getElementById('category_id');
+                categories.forEach(c => {
+                    catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                });
+            } catch (error) {
+                console.error("Error al cargar opciones de selección:", error);
+            }
+        }
+
+        loadSelectOptions();
+
+        const form = document.getElementById('captureForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('brand_id', document.getElementById('brand_id').value);
+            formData.append('category_id', document.getElementById('category_id').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('stock', document.getElementById('stock').value);
+            formData.append('image', document.getElementById('imageInput').files[0]);
+
+            try {
+                const response = await fetch('/api/products', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // Limpiar formulario excepto la imagen si deseas, o reset total
+                    form.reset();
+                    // Volver a cargar por defecto los selectores si se resetea el form
+                    loadSelectOptions();
+                    alert('¡Artículo registrado con éxito!');
+                } else {
+                    alert('Error al guardar: ' + result.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error de conexión con el servidor.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar y Siguiente 🚀';
+            }
+        });
+    </script>
+</body>
+</html>
