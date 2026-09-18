@@ -4,303 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - El Coleccionista pudiente</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b132b;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            background-color: #1c2541;
+            border: 1px solid #3a506b;
+        }
+        .form-control, .form-select {
+            background-color: #0b132b;
+            color: #ffffff;
+            border: 1px solid #3a506b;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0b132b;
+            color: #ffffff;
+            border-color: #6fffe9;
+            box-shadow: 0 0 0 0.25rem rgba(111, 255, 233, 0.25);
+        }
+        .btn-custom {
+            background-color: #00b4d8;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .btn-custom:hover {
+            background-color: #0096c7;
+            color: #ffffff;
+        }
+    </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen p-4 sm:p-6 pb-16">
-    <header class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center border-b border-gray-800 pb-4 gap-4">
-        <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-emerald-400">Panel de Control 🛠️</h1>
-            <p class="text-gray-400 text-xs">Administración general de "El Coleccionista pudiente"</p>
-        </div>
-        <div class="flex gap-2 w-full sm:w-auto justify-center">
-            <a href="/capture.html" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold rounded-xl transition shadow-md">➕ Nuevo Auto</a>
-            <a href="/index.html" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-xs font-semibold rounded-xl transition shadow-md">🌐 Ver Web</a>
-        </div>
-    </header>
+<body>
 
-    <main class="max-w-4xl mx-auto space-y-6">
-        
-        <!-- SECCIÓN: Agregar Marcas y Categorías rápidamente -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-xl">
-            <!-- Formulario Marca -->
-            <form id="brandForm" class="space-y-2">
-                <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider">Nueva Marca</label>
-                <div class="flex gap-2">
-                    <input type="text" id="brandName" placeholder="Ej. Johnny Lightning" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
-                    <button type="submit" class="px-4 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-xl transition">Agregar</button>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-lg p-4 rounded-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="text-info m-0">🏎️ Registrar Nuevo Auto a Escala</h2>
+                        <a href="/" class="btn btn-outline-light btn-sm">Ver Catálogo 🌐</a>
+                    </div>
+
+                    <form id="productForm" enctype="multipart/form-data">
+                        <!-- Título / Modelo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Título / Modelo del Auto</label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="Ej. Nissan Skyline GT-R R34 RLC">
+                        </div>
+
+                        <div class="row">
+                            <!-- Precio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Precio ($ MXN)</label>
+                                <input type="number" step="0.01" class="form-control" id="price" name="price" required placeholder="0.00">
+                            </div>
+                            <!-- Stock -->
+                            <div class="col-md-6 mb-3">
+                                <label for="stock" class="form-label">Stock / Cantidad</label>
+                                <input type="number" class="form-control" id="stock" name="stock" value="1" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Marca -->
+                            <div class="col-md-6 mb-3">
+                                <label for="brand_id" class="form-label">Marca</label>
+                                <select class="form-select" id="brand_id" name="brand_id" required>
+                                    <option value="">Selecciona una marca...</option>
+                                </select>
+                            </div>
+                            <!-- Categoría -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category_id" class="form-label">Categoría</label>
+                                <select class="form-select" id="category_id" name="category_id" required>
+                                    <option value="">Selecciona una categoría...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Imagen Principal -->
+                        <div class="mb-3">
+                            <label for="image" class="form-label">📸 Fotografía Principal</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        </div>
+
+                        <!-- Imágenes Detalladas Opcionales (Galería) -->
+                        <div class="mb-4">
+                            <label for="additional_images" class="form-label">🖼️ Imágenes Detalladas Opcionales (Galería, máx. 5)</label>
+                            <input type="file" class="form-control" id="additional_images" name="additional_images" multiple accept="image/*">
+                            <div class="form-text text-muted">Mantén presionada la tecla Ctrl o Shift para seleccionar varias fotos a la vez (motor, interior, detalles, etc.).</div>
+                        </div>
+
+                        <!-- Botón de Envío -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-custom btn-lg" id="btnSubmit">Guardar Artículo Permanente</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
-
-            <!-- Formulario Categoría -->
-            <form id="categoryForm" class="space-y-2">
-                <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider">Nueva Categoría</label>
-                <div class="flex gap-2">
-                    <input type="text" id="categoryName" placeholder="Ej. Super Treasure Hunt" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
-                    <button type="submit" class="px-4 bg-purple-600 hover:bg-purple-700 text-xs font-bold rounded-xl transition">Agregar</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- LISTADO DE ARTÍCULOS -->
-        <div class="space-y-3">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Inventario Registrado</h2>
-            <div id="loading" class="text-center text-gray-500 py-10">Cargando inventario...</div>
-            <div id="adminList" class="space-y-3">
-                <!-- Dinámico -->
             </div>
-        </div>
-    </main>
-
-    <!-- MODAL DE EDICIÓN -->
-    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-gray-900 border border-gray-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <h3 class="font-bold text-lg text-emerald-400">Editar Artículo ✏️</h3>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white text-lg font-bold">&times;</button>
-            </div>
-            
-            <form id="editForm" class="space-y-3">
-                <input type="hidden" id="editId">
-                
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Descripción / Modelo</label>
-                    <input type="text" id="editTitle" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Precio ($)</label>
-                        <input type="number" step="0.01" id="editPrice" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Stock</label>
-                        <input type="number" id="editStock" required class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Marca</label>
-                        <select id="editBrand" class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Categoría</label>
-                        <select id="editCategory" class="w-full p-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500"></select>
-                    </div>
-                </div>
-
-                <!-- Reemplazar Imagen -->
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Cambiar Imagen (Opcional)</label>
-                    <input type="file" id="editImage" accept="image/*" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer border border-gray-700 rounded-xl p-1 bg-gray-800/50">
-                    <p class="text-[10px] text-gray-500 mt-1">Si dejas este campo vacío, se conservará la foto actual.</p>
-                </div>
-
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeEditModal()" class="w-1/2 py-2.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded-xl transition">Cancelar</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold rounded-xl transition">Guardar Cambios</button>
-                </div>
-            </form>
         </div>
     </div>
 
+    <!-- Script de lógica del panel -->
     <script>
-        let globalBrands = [];
-        let globalCategories = [];
+        document.addEventListener('DOMContentLoaded', async () => {
+            const brandSelect = document.getElementById('brand_id');
+            const categorySelect = document.getElementById('category_id');
+            const productForm = document.getElementById('productForm');
+            const btnSubmit = document.getElementById('btnSubmit');
 
-        async function loadSelectOptions() {
+            // 1. Cargar Marcas y Categorías al abrir la página
             try {
-                const [bRes, cRes] = await Promise.all([fetch('/api/brands'), fetch('/api/categories')]);
-                globalBrands = await bRes.json();
-                globalCategories = await cRes.json();
+                const [brandsRes, categoriesRes] = await Promise.all([
+                    fetch('/api/brands'),
+                    fetch('/api/categories')
+                ]);
 
-                const brandSelect = document.getElementById('editBrand');
-                const catSelect = document.getElementById('editCategory');
-                
-                brandSelect.innerHTML = globalBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-                catSelect.innerHTML = globalCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            } catch (e) {
-                console.error("Error cargando opciones", e);
-            }
-        }
+                const brands = await brandsRes.json();
+                const categories = await categoriesRes.json();
 
-        async function loadAdminProducts() {
-            const container = document.getElementById('adminList');
-            const loading = document.getElementById('loading');
-
-            try {
-                const res = await fetch('/api/products');
-                const products = await res.json();
-
-                loading.style.display = 'none';
-
-                if (products.length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-500 py-12">No hay artículos registrados.</p>';
-                    return;
-                }
-
-                container.innerHTML = products.map(p => {
-                    const isApartado = p.status === 'apartado';
-                    return `
-                        <div class="bg-gray-900 border ${isApartado ? 'border-amber-500/50 bg-amber-950/10' : 'border-gray-800'} rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition">
-                            
-                            <div class="flex items-center gap-4 w-full sm:w-auto">
-                                <img src="${p.image_path}" class="w-16 h-16 object-cover rounded-xl border border-gray-700 shrink-0">
-                                <div>
-                                    <h2 class="font-semibold text-sm sm:text-base text-gray-100 line-clamp-1">${p.title}</h2>
-                                    <p class="text-emerald-400 font-bold text-sm">$${p.price} MXN <span class="text-xs text-gray-400 font-normal">| Stock: ${p.stock}</span></p>
-                                    <div class="flex gap-1.5 mt-1 flex-wrap">
-                                        <span class="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded-full border border-blue-800/50">${p.brand_name || 'Sin marca'}</span>
-                                        <span class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full border border-purple-800/50">${p.category_name || 'Sin categoría'}</span>
-                                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isApartado ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
-                                            ${p.status || 'disponible'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
-                                <button onclick='openEditModal(${JSON.stringify(p)})' class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-xl transition shadow-md">
-                                    Editar ✏️
-                                </button>
-                                
-                                ${isApartado ? `
-                                    <button onclick="updateStatus('${p.id}', 'disponible',${p.stock})" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold rounded-xl transition shadow-md">
-                                        Liberar ✅
-                                    </button>
-                                ` : `
-                                    <button onclick="updateStatus('${p.id}', 'apartado',${p.stock})" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-xs font-bold rounded-xl transition shadow-md">
-                                        Apartar 🔒
-                                    </button>
-                                `}
-
-                                <button onclick="deleteProduct('${p.id}')" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-xs font-bold rounded-xl transition shadow-md" title="Eliminar registro">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error(error);
-                loading.textContent = 'Error al cargar el panel.';
-            }
-        }
-
-        document.getElementById('brandForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('brandName').value;
-            const res = await fetch('/api/brands', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById('brandName').value = '';
-                loadSelectOptions();
-                alert('¡Marca agregada con éxito!');
-            } else {
-                alert('Error al agregar marca (puede que ya exista)');
-            }
-        });
-
-        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('categoryName').value;
-            const res = await fetch('/api/categories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById('categoryName').value = '';
-                loadSelectOptions();
-                alert('¡Categoría agregada con éxito!');
-            } else {
-                alert('Error al agregar categoría (puede que ya exista)');
-            }
-        });
-
-        async function updateStatus(id, newStatus, currentStock) {
-            try {
-                const res = await fetch(`/api/products/${id}/stock`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus, stock: currentStock })
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand.id;
+                    option.textContent = brand.name;
+                    brandSelect.appendChild(option);
                 });
-                const result = await res.json();
-                if (result.success) loadAdminProducts();
-            } catch (e) {
-                alert('Error de conexión');
-            }
-        }
 
-        async function deleteProduct(id) {
-            if (!confirm('¿Estás seguro de eliminar este artículo del catálogo?')) return;
-            try {
-                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-                const data = await res.json();
-                if(data.success) {
-                    loadAdminProducts();
-                } else {
-                    alert('No se pudo eliminar el artículo');
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    categorySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error al cargar marcas o categorías:', error);
+            }
+
+            // 2. Enviar formulario con FormData (Soporta foto principal + galería múltiple)
+            productForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Guardando en la nube...';
+
+                const formData = new FormData(productForm);
+
+                try {
+                    const response = await fetch('/api/products', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('¡Vehículo y galería guardados exitosamente de forma permanente!');
+                        productForm.reset();
+                    } else {
+                        alert('Hubo un error: ' + (result.message || 'No se pudo guardar'));
+                    }
+                } catch (error) {
+                    console.error('Error de red:', error);
+                    alert('Error de conexión con el servidor.');
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Guardar Artículo Permanente';
                 }
-            } catch (e) {
-                alert('Error de conexión con el servidor');
-            }
-        }
-
-        function openEditModal(product) {
-            document.getElementById('editId').value = product.id;
-            document.getElementById('editTitle').value = product.title;
-            document.getElementById('editPrice').value = product.price;
-            document.getElementById('editStock').value = product.stock;
-            document.getElementById('editBrand').value = product.brand_id || '';
-            document.getElementById('editCategory').value = product.category_id || '';
-            document.getElementById('editImage').value = '';
-            
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
-
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('editId').value;
-            
-            const formData = new FormData();
-            formData.append('title', document.getElementById('editTitle').value);
-            formData.append('price', document.getElementById('editPrice').value);
-            formData.append('stock', document.getElementById('editStock').value);
-            formData.append('brand_id', document.getElementById('editBrand').value);
-            formData.append('category_id', document.getElementById('editCategory').value);
-            
-            const imageFile = document.getElementById('editImage').files[0];
-            if (imageFile) {
-                formData.append('image', imageFile);
-            }
-
-            const res = await fetch(`/api/products/${id}`, {
-                method: 'PUT',
-                body: formData
             });
-            const data = await res.json();
-            if(data.success) {
-                closeEditModal();
-                loadAdminProducts();
-                alert('¡Artículo actualizado correctamente!');
-            } else {
-                alert('Error al actualizar el artículo');
-            }
         });
-
-        loadSelectOptions();
-        loadAdminProducts();
     </script>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

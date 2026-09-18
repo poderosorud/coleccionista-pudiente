@@ -3,160 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Captura Rápida - Autos a Escala</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Captura de Artículos - El Coleccionista pudiente</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b132b;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            background-color: #1c2541;
+            border: 1px solid #3a506b;
+        }
+        .form-control, .form-select {
+            background-color: #0b132b;
+            color: #ffffff;
+            border: 1px solid #3a506b;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0b132b;
+            color: #ffffff;
+            border-color: #6fffe9;
+            box-shadow: 0 0 0 0.25rem rgba(111, 255, 233, 0.25);
+        }
+        .btn-custom {
+            background-color: #4ea8de;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .btn-custom:hover {
+            background-color: #3a86b8;
+            color: #ffffff;
+        }
+    </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen p-4 flex flex-col items-center">
-    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl my-6">
-        <h1 class="text-2xl font-bold text-center mb-6 text-emerald-400">Captura de Inventario 🚗</h1>
-        
-        <form id="captureForm" class="space-y-4">
-            <!-- Selector de cámara para móviles -->
-            <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-xl p-4 bg-gray-800/50">
-                <input 
-                    type="file" 
-                    id="imageInput" 
-                    accept="image/*" 
-                    capture="environment" 
-                    required
-                    class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
-                >
-            </div>
+<body>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-300">Descripción del auto (Modelo, Serie)</label>
-                <input 
-                    type="text" 
-                    id="title" 
-                    placeholder="Ej. Nissan Skyline GT-R R34" 
-                    required
-                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
-                >
-            </div>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-lg p-4 rounded-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="text-info m-0">📥 Captura Rápida de Vehículos</h2>
+                        <a href="/" class="btn btn-outline-light btn-sm">Ver Catálogo 🌐</a>
+                    </div>
 
-            <!-- Selector de Marca dinámico -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300">Marca</label>
-                <select 
-                    id="brand_id" 
-                    required
-                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
-                >
-                    <option value="">Selecciona una marca...</option>
-                </select>
-            </div>
+                    <form id="captureForm" enctype="multipart/form-data">
+                        <!-- Título / Modelo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Modelo o Nombre del Auto</label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="Ej. Porsche 935 RLC, Hot Wheels Mazda RX-7...">
+                        </div>
 
-            <!-- Selector de Categoría dinámico -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300">Categoría</label>
-                <select 
-                    id="category_id" 
-                    required
-                    class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
-                >
-                    <option value="">Selecciona una categoría...</option>
-                </select>
-            </div>
+                        <div class="row">
+                            <!-- Precio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Precio ($ MXN)</label>
+                                <input type="number" step="0.01" class="form-control" id="price" name="price" required placeholder="0.00">
+                            </div>
+                            <!-- Stock -->
+                            <div class="col-md-6 mb-3">
+                                <label for="stock" class="form-label">Stock Inicial</label>
+                                <input type="number" class="form-control" id="stock" name="stock" value="1" min="1" required>
+                            </div>
+                        </div>
 
-            <div class="flex gap-4">
-                <div class="w-1/2">
-                    <label class="block text-sm font-medium text-gray-300">Precio ($)</label>
-                    <input 
-                        type="number" 
-                        step="0.01" 
-                        id="price" 
-                        placeholder="0.00" 
-                        required
-                        class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div class="w-1/2">
-                    <label class="block text-sm font-medium text-gray-300">Piezas disp.</label>
-                    <input 
-                        type="number" 
-                        id="stock" 
-                        value="1" 
-                        required
-                        class="w-full mt-1 p-3 bg-gray-800 rounded-xl border border-gray-700 text-white focus:outline-none focus:border-emerald-500"
-                    />
+                        <div class="row">
+                            <!-- Marca -->
+                            <div class="col-md-6 mb-3">
+                                <label for="brand_id" class="form-label">Marca</label>
+                                <select class="form-select" id="brand_id" name="brand_id" required>
+                                    <option value="">Cargando marcas...</option>
+                                </select>
+                            </div>
+                            <!-- Categoría -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category_id" class="form-label">Categoría</label>
+                                <select class="form-select" id="category_id" name="category_id" required>
+                                    <option value="">Cargando categorías...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Imagen Principal -->
+                        <div class="mb-3">
+                            <label for="image" class="form-label">📸 Fotografía Principal</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        </div>
+
+                        <!-- Galería de Imágenes Adicionales -->
+                        <div class="mb-4">
+                            <label for="additional_images" class="form-label">🖼️ Fotos Detalladas Opcionales (Galería, máx. 5)</label>
+                            <input type="file" class="form-control" id="additional_images" name="additional_images" multiple accept="image/*">
+                            <div class="form-text text-muted">Selecciona múltiples fotos para mostrar motor, interiores o detalles específicos del modelo.</div>
+                        </div>
+
+                        <!-- Botón de Envío -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-custom btn-lg" id="btnCapture">Registrar en Inventario</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <button 
-                type="submit" 
-                id="submitBtn"
-                class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl transition shadow-lg text-lg"
-            >
-                Guardar y Siguiente 🚀
-            </button>
-        </form>
+        </div>
     </div>
 
+    <!-- Script de lógica de captura -->
     <script>
-        // Cargar marcas y categorías al abrir la página de captura
-        async function loadSelectOptions() {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const brandSelect = document.getElementById('brand_id');
+            const categorySelect = document.getElementById('category_id');
+            const captureForm = document.getElementById('captureForm');
+            const btnCapture = document.getElementById('btnCapture');
+
+            // 1. Obtener Marcas y Categorías desde la API conectada a HostGator
             try {
-                // Cargar marcas
-                const brandsRes = await fetch('/api/brands');
+                const [brandsRes, categoriesRes] = await Promise.all([
+                    fetch('/api/brands'),
+                    fetch('/api/categories')
+                ]);
+
                 const brands = await brandsRes.json();
-                const brandSelect = document.getElementById('brand_id');
-                brands.forEach(b => {
-                    brandSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                const categories = await categoriesRes.json();
+
+                brandSelect.innerHTML = '<option value="">Selecciona una marca...</option>';
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand.id;
+                    option.textContent = brand.name;
+                    brandSelect.appendChild(option);
                 });
 
-                // Cargar categorías
-                const catRes = await fetch('/api/categories');
-                const categories = await catRes.json();
-                const catSelect = document.getElementById('category_id');
-                categories.forEach(c => {
-                    catSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                categorySelect.innerHTML = '<option value="">Selecciona una categoría...</option>';
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    categorySelect.appendChild(option);
                 });
             } catch (error) {
-                console.error("Error al cargar opciones de selección:", error);
+                console.error('Error al cargar selectores:', error);
+                brandSelect.innerHTML = '<option value="">Error al cargar marcas</option>';
+                categorySelect.innerHTML = '<option value="">Error al cargar categorías</option>';
             }
-        }
 
-        loadSelectOptions();
+            // 2. Enviar el formulario por FormData al servidor backend
+            captureForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                btnCapture.disabled = true;
+                btnCapture.textContent = 'Subiendo a la base de datos...';
 
-        const form = document.getElementById('captureForm');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
+                const formData = new FormData(captureForm);
 
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('brand_id', document.getElementById('brand_id').value);
-            formData.append('category_id', document.getElementById('category_id').value);
-            formData.append('price', document.getElementById('price').value);
-            formData.append('stock', document.getElementById('stock').value);
-            formData.append('image', document.getElementById('imageInput').files[0]);
+                try {
+                    const response = await fetch('/api/products', {
+                        method: 'POST',
+                        body: formData
+                    });
 
-            try {
-                const response = await fetch('/api/products', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
+                    const result = await response.json();
 
-                if (result.success) {
-                    // Limpiar formulario excepto la imagen si deseas, o reset total
-                    form.reset();
-                    // Volver a cargar por defecto los selectores si se resetea el form
-                    loadSelectOptions();
-                    alert('¡Artículo registrado con éxito!');
-                } else {
-                    alert('Error al guardar: ' + result.message);
+                    if (result.success) {
+                        alert('¡Vehículo y galería capturados exitosamente de forma permanente!');
+                        captureForm.reset();
+                    } else {
+                        alert('Error: ' + (result.message || 'No se pudo registrar el artículo'));
+                    }
+                } catch (error) {
+                    console.error('Error de red:', error);
+                    alert('Error de conexión al intentar guardar el artículo.');
+                } finally {
+                    btnCapture.disabled = false;
+                    btnCapture.textContent = 'Registrar en Inventario';
                 }
-            } catch (error) {
-                console.error(error);
-                alert('Error de conexión con el servidor.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Guardar y Siguiente 🚀';
-            }
+            });
         });
     </script>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
