@@ -12,6 +12,7 @@
         @media (min-width: 768px) {
             .img-thumb { height: 120px; border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-top-right-radius: 0; }
         }
+        .preview-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #0d6efd; display: none; }
     </style>
 </head>
 <body>
@@ -71,15 +72,20 @@
                             </div>
                         </div>
 
+                        <!-- Foto Principal con Vista Previa -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">📸 Reemplazar Foto Principal (Opcional)</label>
-                            <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+                                <img id="mainImagePreview" class="preview-img" alt="Vista previa">
+                            </div>
                         </div>
 
+                        <!-- Galería con Contador en Tiempo Real -->
                         <div class="mb-3">
-                            <label class="form-label fw-bold">🖼️ Añadir a la Galería Detallada (Opcional, máx. 5)</label>
+                            <label class="form-label fw-bold">🖼️ Añadir a la Galería Detallada (Opcional)</label>
                             <input type="file" class="form-control" id="edit_additional_images" name="additional_images" multiple accept="image/*">
-                            <div class="form-text small text-muted">Las nuevas imágenes se sumarán a la galería existente de este artículo.</div>
+                            <div id="galleryCounter" class="form-text text-muted fw-semibold mt-1">Ninguna imagen adicional seleccionada.</div>
                         </div>
 
                         <div class="d-grid">
@@ -100,9 +106,41 @@
             const editBrandSelect = document.getElementById('edit_brand_id');
             const editCategorySelect = document.getElementById('edit_category_id');
             const btnUpdate = document.getElementById('btnUpdate');
+            
+            const mainImageInput = document.getElementById('edit_image');
+            const mainImagePreview = document.getElementById('mainImagePreview');
+            const additionalImagesInput = document.getElementById('edit_additional_images');
+            const galleryCounter = document.getElementById('galleryCounter');
 
             let brandsList = [];
             let categoriesList = [];
+
+            // 1. Mostrar vista previa de la foto principal seleccionada
+            mainImageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        mainImagePreview.src = event.target.result;
+                        mainImagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    mainImagePreview.style.display = 'none';
+                }
+            });
+
+            // 2. Mostrar contador dinámico de fotos adicionales seleccionadas
+            additionalImagesInput.addEventListener('change', (e) => {
+                const count = e.target.files.length;
+                if (count > 0) {
+                    galleryCounter.textContent = `✅ Has seleccionado ${count} foto(s) nueva(s) para la galería.`;
+                    galleryCounter.className = "form-text text-success fw-bold mt-1";
+                } else {
+                    galleryCounter.textContent = "Ninguna imagen adicional seleccionada.";
+                    galleryCounter.className = "form-text text-muted fw-semibold mt-1";
+                }
+            });
 
             async function loadSelects() {
                 try {
@@ -127,6 +165,7 @@
 
                     container.innerHTML = '';
                     products.forEach(p => {
+                        const totalGalleryPhotos = p.additional_images ? p.additional_images.length : 0;
                         const card = document.createElement('div');
                         card.className = 'col-12 col-md-6 col-lg-4';
                         card.innerHTML = `
@@ -141,6 +180,9 @@
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <span class="text-success fw-bold fs-5">$${Number(p.price).toFixed(2)}</span>
                                             <span class="badge bg-primary">Stock: ${p.stock}</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <span class="badge bg-secondary text-light">🖼️ Galería: ${totalGalleryPhotos} foto(s)</span>
                                         </div>
                                         <div class="d-flex gap-2">
                                             <button class="btn btn-outline-primary btn-sm flex-fill fw-bold py-2" onclick='openEditModal(${JSON.stringify(p)})'>✏️ Editar</button>
@@ -164,9 +206,12 @@
                 document.getElementById('edit_price').value = product.price;
                 document.getElementById('edit_stock').value = product.stock;
                 
-                // Limpiar campos de archivo por si quedaron seleccionados previamente
-                document.getElementById('edit_image').value = '';
-                document.getElementById('edit_additional_images').value = '';
+                // Resetear previsualizaciones y campos de archivo
+                mainImageInput.value = '';
+                mainImagePreview.style.display = 'none';
+                additionalImagesInput.value = '';
+                galleryCounter.textContent = `ℹ️ Este artículo ya tiene ${product.additional_images ? product.additional_images.length : 0} foto(s) en su galería. Puedes agregar más si lo deseas.`;
+                galleryCounter.className = "form-text text-muted fw-semibold mt-1";
 
                 editBrandSelect.innerHTML = '';
                 brandsList.forEach(b => {
@@ -194,7 +239,7 @@
                 const id = document.getElementById('edit_id').value;
                 
                 btnUpdate.disabled = true;
-                btnUpdate.textContent = 'Actualizando en la nube...';
+                btnUpdate.textContent = 'Subiendo imágenes y guardando cambios...';
 
                 try {
                     const formData = new FormData(editForm);
@@ -209,13 +254,13 @@
                     if (result.success) {
                         editModal.hide();
                         loadInventory();
-                        alert('¡Artículo actualizado correctamente!');
+                        alert('✨ ¡Artículo e imágenes actualizados y guardados permanentemente con éxito!');
                     } else {
                         alert('Error al actualizar: ' + (result.message || 'Desconocido'));
                     }
                 } catch (err) {
                     console.error('Error de red al editar:', err);
-                    alert('Error de conexión con el servidor al intentar actualizar.');
+                    alert('Error de conexión con el servidor al intentar subir las imágenes.');
                 } finally {
                     btnUpdate.disabled = false;
                     btnUpdate.textContent = 'Guardar Cambios';
