@@ -7,14 +7,13 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Aumentamos el límite de tamaño para permitir la subida de múltiples fotos en Base64 sin error de conexión
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Servir vistas estáticas y archivos de la raíz (como el logo.png)
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.static(path.join(__dirname))); 
 
-// Configuración de la conexión a MySQL (HostGator)
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -22,9 +21,14 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
-// Configuración de Multer en memoria RAM para procesar las imágenes en Base64
+// Configuración de Multer en memoria RAM
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+const cpUpload = upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'additional_images', maxCount: 5 }
+]);
 
 // ==================== RUTAS PÚBLICAS Y DE CATÁLOGO ====================
 
@@ -48,6 +52,7 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
+// Obtener productos incluyendo sus filtros y la galería de imágenes adicionales
 app.get('/api/products', async (req, res) => {
     try {
         const { search, brand, category } = req.query;
@@ -75,31 +80,41 @@ app.get('/api/products', async (req, res) => {
 
         query += ` ORDER BY p.created_at DESC`;
 
-        const [rows] = await pool.execute(query, params);
-        res.json(rows);
+        const [products] = await pool.execute(query, params);
+
+        for (let product of products) {
+            const [images] = await pool.execute('SELECT image_path FROM product_images WHERE product_id = ?', [product.id]);
+            product.additional_images = images.map(img => img.image_path);
+        }
+
+        res.json(products);
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Error al obtener productos' });
     }
 });
 
-// Crear producto con imagen guardada permanentemente en Base64 en MySQL
-app.post('/api/products', upload.single('image'), async (req, res) => {
+// Crear producto con imagen principal y galería opcional en Base64
+app.post('/api/products', cpUpload, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
+
         const { title, price, stock, brand_id, category_id } = req.body;
         
         let imagePath = '';
-        if (req.file) {
-            const b64 = Buffer.from(req.file.buffer).toString('base64');
-            imagePath = `data:${req.file.mimetype};base64,${b64}`;
+        if (req.files && req.files['image'] && req.files['image'][0]) {
+            const file = req.files['image'][0];
+            const b64 = Buffer.from(file.buffer).toString('base64');
+            imagePath = `data:${file.mimetype};base64,${b64}`;
         }
 
-        const query = `
+        const productQuery = `
             INSERT INTO products (title, price, stock, image_path, brand_id, category_id, status) 
             VALUES (?, ?, ?, ?, ?, ?, 'disponible')
         `;
         
-        const [result] = await pool.execute(query, [
+        const [result] = await connection.execute(productQuery, [
             title, 
             price, 
             stock || 1, 
@@ -108,68 +123,82 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             category_id || null
         ]);
 
-        res.json({ success: true, message: 'Artículo guardado permanentemente', id: result.insertId });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Error en el servidor al guardar el artículo' });
-    }
-});
+        const productId = result.insertId;
 
-
-// ==================== RUTAS DE ADMINISTRACIÓN Y GESTIÓN ====================
-
-app.put('/api/products/:id/stock', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { stock, status } = req.body;
-
-        const [result] = await pool.execute(
-            'UPDATE products SET stock = ?, status = ? WHERE id = ?',
-            [stock, status, id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Producto no encontrado' });
+        if (req.files && req.files['additional_images']) {
+            for (const file of req.files['additional_images']) {
+                const b64 = Buffer.from(file.buffer).toString('base64');
+                const addImagePath = `data:${file.mimetype};base64,${b64}`;
+                await connection.execute(
+                    'INSERT INTO product_images (product_id, image_path) VALUES (?, ?)',
+                    [productId, addImagePath]
+                );
+            }
         }
 
-        res.json({ success: true, message: 'Inventario actualizado correctamente' });
+        await connection.commit();
+        res.json({ success: true, message: 'Artículo y galería guardados permanentemente', id: productId });
     } catch (error) {
+        await connection.rollback();
         console.error(error);
-        res.status(500).json({ success: false, message: 'Error al actualizar inventario' });
+        res.status(500).json({ success: false, message: 'Error en el servidor al guardar el artículo' });
+    } finally {
+        connection.release();
     }
 });
 
-// Editar un artículo (actualiza datos y la imagen nueva en Base64 si se adjunta)
-app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+// Actualizar / Editar un artículo (soporta actualización de datos, reemplazo de foto principal y adición de galería)
+app.put('/api/products/:id', cpUpload, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
+
         const { id } = req.params;
         const { title, price, stock, brand_id, category_id } = req.body;
 
-        if (req.file) {
-            const b64 = Buffer.from(req.file.buffer).toString('base64');
-            const newImagePath = `data:${req.file.mimetype};base64,${b64}`;
-            const query = `
-                UPDATE products 
-                SET title = ?, price = ?, stock = ?, brand_id = ?, category_id = ?, image_path = ? 
-                WHERE id = ?
-            `;
-            await pool.execute(query, [title, price, stock, brand_id || null, category_id || null, newImagePath, id]);
-        } else {
-            const query = `
-                UPDATE products 
-                SET title = ?, price = ?, stock = ?, brand_id = ?, category_id = ? 
-                WHERE id = ?
-            `;
-            await pool.execute(query, [title, price, stock, brand_id || null, category_id || null, id]);
+        let updateQuery = `
+            UPDATE products 
+            SET title = ?, price = ?, stock = ?, brand_id = ?, category_id = ?
+        `;
+        let queryParams = [title, price, stock, brand_id || null, category_id || null];
+
+        if (req.files && req.files['image'] && req.files['image'][0]) {
+            const file = req.files['image'][0];
+            const b64 = Buffer.from(file.buffer).toString('base64');
+            const newImagePath = `data:${file.mimetype};base64,${b64}`;
+            updateQuery += `, image_path = ?`;
+            queryParams.push(newImagePath);
         }
 
+        updateQuery += ` WHERE id = ?`;
+        queryParams.push(id);
+
+        await connection.execute(updateQuery, queryParams);
+
+        // Si se subieron nuevas fotos adicionales, las agregamos a la galería
+        if (req.files && req.files['additional_images']) {
+            for (const file of req.files['additional_images']) {
+                const b64 = Buffer.from(file.buffer).toString('base64');
+                const addImagePath = `data:${file.mimetype};base64,${b64}`;
+                await connection.execute(
+                    'INSERT INTO product_images (product_id, image_path) VALUES (?, ?)',
+                    [id, addImagePath]
+                );
+            }
+        }
+
+        await connection.commit();
         res.json({ success: true, message: 'Artículo actualizado correctamente' });
     } catch (error) {
+        await connection.rollback();
         console.error(error);
         res.status(500).json({ success: false, message: 'Error al actualizar el artículo' });
+    } finally {
+        connection.release();
     }
 });
 
+// Eliminar un artículo del inventario
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -208,8 +237,14 @@ app.post('/api/categories', async (req, res) => {
     }
 });
 
+// Vistas
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+});
 
-// ==================== INICIO DEL SERVIDOR ====================
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
