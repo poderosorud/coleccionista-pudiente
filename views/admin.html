@@ -3,90 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Inventario - El Coleccionista pudiente</title>
+    <title>Gestión y Edición - El Coleccionista pudiente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0b132b; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { background-color: #1c2541; border: 1px solid #3a506b; }
-        .table { color: #fff; }
-        .table-dark { background-color: #1c2541; }
-        .btn-custom { background-color: #00b4d8; color: #fff; font-weight: bold; }
-        .btn-custom:hover { background-color: #0096c7; color: #fff; }
+        body { background-color: #f8f9fa; color: #212529; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-product { background: #fff; border: 1px solid #dee2e6; border-radius: 12px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); margin-bottom: 1rem; }
+        .img-thumb { width: 100%; height: 180px; object-fit: cover; border-top-left-radius: 12px; border-top-right-radius: 12px; }
+        @media (min-width: 768px) {
+            .img-thumb { height: 120px; border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-top-right-radius: 0; }
+        }
     </style>
 </head>
 <body>
-    <div class="container my-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="text-info">⚙️ Gestión de Inventario</h2>
-            <div>
-                <a href="/capture.html" class="btn btn-success me-2">📥 Ir a Captura Rápida</a>
-                <a href="/" class="btn btn-outline-light">🌐 Ver Catálogo</a>
+    <div class="container my-3 my-md-5">
+        <!-- Cabecera adaptativa -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <h2 class="text-primary m-0">⚙️ Gestión de Inventario</h2>
+            <div class="d-flex gap-2">
+                <a href="/capture.html" class="btn btn-success flex-fill fw-bold">📥 Capturar Nuevo</a>
+                <a href="/" class="btn btn-outline-secondary flex-fill fw-bold">🌐 Catálogo</a>
             </div>
         </div>
 
-        <div class="card shadow p-4 rounded-4">
-            <h4 class="mb-3 text-warning">Listado de Autos Registrados</h4>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Imagen</th>
-                            <th>Modelo</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTable">
-                        <tr><td colspan="5" class="text-center">Cargando inventario...</td></tr>
-                    </tbody>
-                </table>
+        <!-- Contenedor dinámico de productos -->
+        <div id="productsContainer" class="row">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2">Cargando inventario...</p>
             </div>
         </div>
     </div>
 
+    <!-- MODAL DE EDICIÓN RESPONSIVO -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content p-3">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary fw-bold">✏️ Editar Artículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm" enctype="multipart/form-data">
+                        <input type="hidden" id="edit_id" name="id">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Modelo o Nombre</label>
+                            <input type="text" class="form-control" id="edit_title" name="title" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-bold">Precio ($)</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_price" name="price" required>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-bold">Stock</label>
+                                <input type="number" class="form-control" id="edit_stock" name="stock" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Marca</label>
+                                <select class="form-select" id="edit_brand_id" name="brand_id" required></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Categoría</label>
+                                <select class="form-select" id="edit_category_id" name="category_id" required></select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📸 Reemplazar Foto Principal (Opcional)</label>
+                            <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🖼️ Añadir a la Galería Detallada (Opcional)</label>
+                            <input type="file" class="form-control" id="edit_additional_images" name="additional_images" multiple accept="image/*">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold" id="btnUpdate">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de lógica adaptada para móviles y edición -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const tableBody = document.getElementById('inventoryTable');
+            const container = document.getElementById('productsContainer');
+            const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            const editForm = document.getElementById('editForm');
+            const editBrandSelect = document.getElementById('edit_brand_id');
+            const editCategorySelect = document.getElementById('edit_category_id');
 
+            let brandsList = [];
+            let categoriesList = [];
+
+            // 1. Cargar marcas y categorías para el modal de edición
+            async function loadSelects() {
+                try {
+                    const [bRes, cRes] = await Promise.all([fetch('/api/brands'), fetch('/api/categories')]);
+                    brandsList = await bRes.json();
+                    categoriesList = await cRes.json();
+                } catch (err) {
+                    console.error('Error cargando catálogos:', err);
+                }
+            }
+            await loadSelects();
+
+            // 2. Cargar inventario en formato de tarjetas responsivas
             async function loadInventory() {
                 try {
                     const res = await fetch('/api/products');
                     const products = await res.json();
                     
                     if (products.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No hay autos registrados.</td></tr>';
+                        container.innerHTML = '<div class="col-12 text-center text-muted py-5">No hay autos registrados.</div>';
                         return;
                     }
 
-                    tableBody.innerHTML = '';
+                    container.innerHTML = '';
                     products.forEach(p => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><img src="${p.image_path || 'https://via.placeholder.com/60'}" width="50" height="50" style="object-fit:cover; border-radius:5px;"></td>
-                            <td><strong>${p.title}</strong><br><small class="text-muted">${p.brand_name || ''} - ${p.category_name || ''}</small></td>
-                            <td>$${Number(p.price).toFixed(2)}</td>
-                            <td><span class="badge bg-info text-dark">${p.stock}</span></td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️ Eliminar</button>
-                            </td>
+                        const card = document.createElement('div');
+                        card.className = 'col-12 col-md-6 col-lg-4';
+                        card.innerHTML = `
+                            <div class="card-product">
+                                <div class="row g-0 align-items-center">
+                                    <div class="col-4 col-md-4">
+                                        <img src="${p.image_path || 'https://via.placeholder.com/150'}" class="img-thumb" alt="${p.title}">
+                                    </div>
+                                    <div class="col-8 col-md-8 p-3">
+                                        <h6 class="fw-bold text-dark mb-1">${p.title}</h6>
+                                        <p class="text-muted small mb-1">${p.brand_name || 'Sin marca'} — ${p.category_name || 'Sin categoría'}</p>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-success fw-bold fs-5">$${Number(p.price).toFixed(2)}</span>
+                                            <span class="badge bg-primary">Stock: ${p.stock}</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-outline-primary btn-sm flex-fill fw-bold py-2" onclick='openEditModal(${JSON.stringify(p)})'>✏️ Editar</button>
+                                            <button class="btn btn-outline-danger btn-sm flex-fill fw-bold py-2" onclick="deleteProduct(${p.id})">🗑️ Borrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         `;
-                        tableBody.appendChild(tr);
+                        container.appendChild(card);
                     });
                 } catch (err) {
-                    console.error('Error al cargar inventario:', err);
+                    console.error('Error:', err);
+                    container.innerHTML = '<div class="col-12 text-center text-danger">Error al conectar con la base de datos.</div>';
                 }
             }
 
+            // 3. Abrir modal y rellenar datos para editar
+            window.openEditModal = (product) => {
+                document.getElementById('edit_id').value = product.id;
+                document.getElementById('edit_title').value = product.title;
+                document.getElementById('edit_price').value = product.price;
+                document.getElementById('edit_stock').value = product.stock;
+
+                // Rellenar select de marcas
+                editBrandSelect.innerHTML = '';
+                brandsList.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name;
+                    if (b.id === product.brand_id) opt.selected = true;
+                    editBrandSelect.appendChild(opt);
+                });
+
+                // Rellenar select de categorías
+                editCategorySelect.innerHTML = '';
+                categoriesList.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    if (c.id === product.category_id) opt.selected = true;
+                    editCategorySelect.appendChild(opt);
+                });
+
+                editModal.show();
+            };
+
+            // 4. Enviar cambios de edición
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit_id').value;
+                const formData = new FormData(editForm);
+                const btnUpdate = document.getElementById('btnUpdate');
+                
+                btnUpdate.disabled = true;
+                btnUpdate.textContent = 'Actualizando...';
+
+                try {
+                    const res = await fetch(`/api/products/${id}`, { method: 'PUT', body: formData });
+                    const result = await res.json();
+
+                    if (result.success) {
+                        editModal.hide();
+                        loadInventory();
+                    } else {
+                        alert('Error al actualizar');
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                } finally {
+                    btnUpdate.disabled = false;
+                    btnUpdate.textContent = 'Guardar Cambios';
+                }
+            });
+
+            // 5. Eliminar producto
             window.deleteProduct = async (id) => {
                 if (confirm('¿Estás seguro de eliminar este vehículo?')) {
                     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
                     const data = await res.json();
-                    if (data.success) {
-                        loadInventory();
-                    } else {
-                        alert('No se pudo eliminar');
-                    }
+                    if (data.success) loadInventory();
                 }
             };
 
